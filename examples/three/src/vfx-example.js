@@ -18,6 +18,14 @@ export function setupVFXExample(scene) {
     appearance: AppearanceMode.Circular,
     easeFunction: "easeOutQuad",
     blendingMode: THREE.AdditiveBlending,
+    shadingHooks: {
+      fragmentBeforeOutput: /* glsl */ `
+        // Add a simple pulsing effect based on time
+        float pulse = 0.5 + 0.5 * sin(uTime * 10.0 + vProgress * 10.0);
+        finalColor.rgb *= pulse;
+        finalColor.r = 1.0; // Enhance red channel
+      `,
+    },
   };
 
   const particles = new VFXParticles("mainParticles", particlesSettings);

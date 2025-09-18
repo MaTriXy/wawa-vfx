@@ -9,6 +9,13 @@ export enum RenderMode {
   Mesh = "mesh",
 }
 
+export interface ShadingHooks {
+  customUniforms?: string;
+  customVaryings?: string;
+  vertexBeforeOutput?: string;
+  fragmentBeforeOutput?: string;
+}
+
 export type EaseFunction =
   | "easeLinear"
 
