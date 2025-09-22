@@ -5,6 +5,7 @@ import {
   EaseFunction,
   easeFunctionList,
   RenderMode,
+  ShadingHooks,
 } from "../types";
 import { vfxStore } from "../VFXStore";
 
@@ -34,6 +35,8 @@ export interface VFXParticlesSettings {
   appearance?: AppearanceMode;
   easeFunction?: EaseFunction;
   blendingMode?: THREE.Blending;
+  shadingHooks?: ShadingHooks;
+  side?: THREE.Side;
 }
 
 const tmpPosition = new THREE.Vector3();
@@ -86,6 +89,8 @@ export class VFXParticlesCore {
       appearance: settings.appearance ?? AppearanceMode.Square,
       easeFunction: settings.easeFunction ?? "easeLinear",
       blendingMode: settings.blendingMode ?? THREE.AdditiveBlending,
+      shadingHooks: settings.shadingHooks ?? {},
+      side: settings.side ?? THREE.FrontSide,
     };
 
     const defaultGeometry = geometry || new THREE.PlaneGeometry(0.5, 0.5);
@@ -185,10 +190,14 @@ uniform vec3 uGravity;
 uniform float uStretchScale;
 uniform int uEasingFunction;
 
+${this.settings.shadingHooks.customUniforms || ""}
+
 varying vec2 vUv;
 varying vec3 vColor;
 varying vec3 vColorEnd;
 varying float vProgress;
+
+${this.settings.shadingHooks.customVaryings || ""}
 
 attribute float instanceSpeed;
 attribute vec3 instanceRotationSpeed;
@@ -197,16 +206,19 @@ attribute vec3 instanceColor;
 attribute vec3 instanceColorEnd;
 attribute vec2 instanceLifetime;
 
+${this.settings.shadingHooks.vertexBeforeMain || ""}
+
 void main() {
   float startTime = instanceLifetime.x;
   float duration = instanceLifetime.y;
   float age = uTime - startTime;
 
   age = instanceSpeed < 0.0 ? duration - (uTime - startTime) : uTime - startTime;
-  float progress = clamp(age / duration, 0.0, 1.01);
+  float progress = clamp(age / duration, 0.0, 1.0);
   vProgress = applyEasing(progress, uEasingFunction);
 
-  if (vProgress < 0.0 || vProgress > 1.0) {
+  if (progress < 0.0 || progress >= 1.0) {
+    vProgress = progress;
     gl_Position = vec4(vec3(9999.0), 1.0);
     return;
   }
@@ -307,22 +319,31 @@ void main() {
     }
   #endif
 
+
+  ${this.settings.shadingHooks.vertexBeforeOutput || ""}
   gl_Position = projectionMatrix * mvPosition;
   vUv = uv;
   vColor = instanceColor;
   vColorEnd = instanceColorEnd;
 }
 `,
-      fragmentShader: `
+      fragmentShader: /*glsl*/ `
+uniform float uTime;
 uniform float uIntensity;
 uniform vec2 uFadeAlpha;
 uniform sampler2D alphaMap;
 uniform int uAppearanceMode;
 
+${this.settings.shadingHooks.customUniforms || ""}
+
 varying vec3 vColor;
 varying vec3 vColorEnd;
 varying float vProgress;
 varying vec2 vUv;
+
+${this.settings.shadingHooks.customVaryings || ""}
+
+${this.settings.shadingHooks.fragmentBeforeMain || ""}
 
 void main() {
   if (vProgress < 0.0 || vProgress > 1.0) {
@@ -336,7 +357,7 @@ void main() {
   #ifdef USE_ALPHAMAP
     vec2 uv = vUv;
     vec4 tex = texture2D(alphaMap, uv);
-    gl_FragColor = vec4(finalColor, tex.a * alpha);
+    alpha = tex.a * alpha;
   #else
     if(uAppearanceMode == 1){
       vec2 center = vec2(0.5);
@@ -345,12 +366,14 @@ void main() {
         discard;
       }
     }
-    gl_FragColor = vec4(finalColor, alpha);
   #endif
+  ${this.settings.shadingHooks.fragmentBeforeOutput || ""}
+  gl_FragColor = vec4(finalColor, alpha);
 }`,
       transparent: true,
       blending: this.settings.blendingMode,
       depthWrite: false,
+      side: this.settings.side,
     });
   }
 

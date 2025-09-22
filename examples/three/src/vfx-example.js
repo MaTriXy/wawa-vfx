@@ -12,12 +12,21 @@ export function setupVFXExample(scene) {
     nbParticles: 10000,
     intensity: 1.5,
     renderMode: RenderMode.Billboard,
+    stretchScale: 2,
     fadeSize: [0, 0],
     fadeAlpha: [0, 0.5],
     gravity: [0, -9.8, 0],
     appearance: AppearanceMode.Circular,
-    easeFunction: "easeOutQuad",
+    easeFunction: "easeLinear",
     blendingMode: THREE.AdditiveBlending,
+    shadingHooks: {
+      fragmentBeforeOutput: /* glsl */ `
+        // Add a simple pulsing effect based on time
+        float pulse = 0.5 + 0.5 * sin(uTime * 10.0 + vProgress * 10.0);
+        finalColor.rgb *= pulse;
+        finalColor.r = 1.0; // Enhance red channel
+      `,
+    },
   };
 
   const particles = new VFXParticles("mainParticles", particlesSettings);
@@ -35,12 +44,12 @@ export function setupVFXExample(scene) {
     colorStart: ["orange", "#ffffff"],
     colorEnd: ["pink", "#ffffff"],
     particlesLifetime: [0.5, 2],
-    speed: [1, 10],
-    size: [0.1, 0.3],
+    speed: [-1, -10],
+    size: [0.05, 0.1],
     startPositionMin: [-0.1, -0.1, -0.1],
     startPositionMax: [0.1, 0.1, 0.1],
-    directionMin: [-1, 0, -1],
-    directionMax: [1, 2, 1],
+    directionMin: [-1, -1, -1],
+    directionMax: [1, 1, 1],
   };
 
   const emitter = new VFXEmitter("mainParticles", emitterSettings);
