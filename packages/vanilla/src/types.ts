@@ -12,7 +12,9 @@ export enum RenderMode {
 export interface ShadingHooks {
   customUniforms?: string;
   customVaryings?: string;
+  vertexBeforeMain?: string;
   vertexBeforeOutput?: string;
+  fragmentBeforeMain?: string;
   fragmentBeforeOutput?: string;
 }
 

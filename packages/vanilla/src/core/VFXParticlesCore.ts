@@ -36,6 +36,7 @@ export interface VFXParticlesSettings {
   easeFunction?: EaseFunction;
   blendingMode?: THREE.Blending;
   shadingHooks?: ShadingHooks;
+  side?: THREE.Side;
 }
 
 const tmpPosition = new THREE.Vector3();
@@ -89,6 +90,7 @@ export class VFXParticlesCore {
       easeFunction: settings.easeFunction ?? "easeLinear",
       blendingMode: settings.blendingMode ?? THREE.AdditiveBlending,
       shadingHooks: settings.shadingHooks ?? {},
+      side: settings.side ?? THREE.FrontSide,
     };
 
     const defaultGeometry = geometry || new THREE.PlaneGeometry(0.5, 0.5);
@@ -204,16 +206,19 @@ attribute vec3 instanceColor;
 attribute vec3 instanceColorEnd;
 attribute vec2 instanceLifetime;
 
+${this.settings.shadingHooks.vertexBeforeMain || ""}
+
 void main() {
   float startTime = instanceLifetime.x;
   float duration = instanceLifetime.y;
   float age = uTime - startTime;
 
   age = instanceSpeed < 0.0 ? duration - (uTime - startTime) : uTime - startTime;
-  float progress = clamp(age / duration, 0.0, 1.01);
+  float progress = clamp(age / duration, 0.0, 1.0);
   vProgress = applyEasing(progress, uEasingFunction);
 
-  if (vProgress < 0.0 || vProgress > 1.0) {
+  if (progress < 0.0 || progress >= 1.0) {
+    vProgress = progress;
     gl_Position = vec4(vec3(9999.0), 1.0);
     return;
   }
@@ -338,6 +343,8 @@ varying vec2 vUv;
 
 ${this.settings.shadingHooks.customVaryings || ""}
 
+${this.settings.shadingHooks.fragmentBeforeMain || ""}
+
 void main() {
   if (vProgress < 0.0 || vProgress > 1.0) {
     discard;
@@ -366,6 +373,7 @@ void main() {
       transparent: true,
       blending: this.settings.blendingMode,
       depthWrite: false,
+      side: this.settings.side,
     });
   }
 

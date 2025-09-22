@@ -169,6 +169,7 @@ const CustomParticles = () => {
 | appearance    | AppearanceMode          | AppearanceMode.Square | Particle appearance (Square or Circular)                 |
 | easeFunction  | EaseFunction            | 'easeLinear'      | Easing function for particle animations                       |
 | blendingMode  | THREE.Blending          | AdditiveBlending  | How particles blend with the scene                            |
+| shadingHooks  | object                  | {}                | Custom GLSL shader hooks for advanced rendering effects       |
 
 ### VFXEmitter Component
 
@@ -336,6 +337,39 @@ Control whether particles emit in the emitter's local space or world space.
   }}
 />
 ```
+
+#### Custom Shader Hooks
+Add custom GLSL shader code to modify particle rendering for advanced visual effects:
+
+```jsx
+<VFXParticles
+  name="customShaderEffect"
+  settings={{
+    nbParticles: 5000,
+    renderMode: "billboard",
+    shadingHooks: {
+      fragmentBeforeOutput: /* glsl */ `
+        // Add a simple pulsing effect based on time
+        float pulse = 0.5 + 0.5 * sin(uTime * 10.0 + vProgress * 10.0);
+        finalColor.rgb *= pulse;
+        finalColor.r = 1.0; // Enhance red channel
+      `,
+    },
+    // ... other settings
+  }}
+/>
+```
+
+Available shader hooks:
+- **customUniforms**: Add custom uniform declarations
+- **customVaryings**: Add custom varying declarations
+- **vertexBeforeOutput**: Modify vertex shader output before final gl_Position
+- **fragmentBeforeOutput**: Modify the final color before it's written to the screen
+
+Built-in shader variables accessible in hooks:
+- `uTime`: Current time uniform
+- `vProgress`: Particle lifetime progress (0 to 1)
+- `finalColor`: The computed particle color in fragment shader
 
 ## Key Benefits
 
