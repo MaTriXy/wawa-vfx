@@ -37,6 +37,7 @@ export interface VFXParticlesSettings {
   blendingMode?: THREE.Blending;
   shadingHooks?: ShadingHooks;
   side?: THREE.Side;
+  depthTest?: boolean;
 }
 
 const tmpPosition = new THREE.Vector3();
@@ -91,6 +92,7 @@ export class VFXParticlesCore {
       blendingMode: settings.blendingMode ?? THREE.AdditiveBlending,
       shadingHooks: settings.shadingHooks ?? {},
       side: settings.side ?? THREE.FrontSide,
+      depthTest: settings.depthTest ?? true,
     };
 
     const defaultGeometry = geometry || new THREE.PlaneGeometry(0.5, 0.5);
@@ -374,6 +376,7 @@ void main() {
       blending: this.settings.blendingMode,
       depthWrite: false,
       side: this.settings.side,
+      depthTest: this.settings.depthTest,
     });
   }
 
